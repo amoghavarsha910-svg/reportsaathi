@@ -14,7 +14,7 @@ import { deleteSavedReport, listSavedReports, saveReportSummary } from './lib/re
 import { supabase } from './lib/supabase.js'
 import { isAuthRequiredError } from './lib/session.js'
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/+$/, '')
 const ATTENTION_STATUSES = new Set(['high', 'low', 'borderline'])
 
 export default function App() {
@@ -40,27 +40,44 @@ export default function App() {
 
   useEffect(() => {
     let active = true
+    let retryTimer
+    let requestController
+    let retryCount = 0
+
     const poll = async () => {
+      requestController = new AbortController()
+      const timeout = window.setTimeout(() => requestController?.abort(), 60_000)
+      let nextDelay = Math.min(5_000 * (2 ** retryCount), 30_000)
+
       try {
-        const response = await fetch(`${API_URL}/api/health`)
+        const response = await fetch(`${API_BASE_URL}/api/health`, { signal: requestController.signal })
         if (!response.ok) throw new Error('Backend health check failed')
         const data = await response.json()
         if (active) {
           setHealth(data)
           setBackendReady(true)
         }
+        retryCount = 0
+        nextDelay = 30_000
       } catch {
         if (active) {
           setHealth(null)
           setBackendReady(false)
         }
+        retryCount += 1
+        nextDelay = Math.min(5_000 * (2 ** (retryCount - 1)), 30_000)
+      } finally {
+        window.clearTimeout(timeout)
+        requestController = null
+        if (active) retryTimer = window.setTimeout(poll, nextDelay)
       }
     }
+
     poll()
-    const timer = window.setInterval(poll, 5000)
     return () => {
       active = false
-      window.clearInterval(timer)
+      window.clearTimeout(retryTimer)
+      requestController?.abort()
     }
   }, [])
 
@@ -115,7 +132,7 @@ export default function App() {
       const form = new FormData()
       form.append('file', selectedFile)
       form.append('language', language)
-      const response = await fetch(`${API_URL}/api/analyze`, { method: 'POST', body: form })
+      const response = await fetch(`${API_BASE_URL}/api/analyze`, { method: 'POST', body: form })
       const data = await response.json()
       if (!response.ok) throw new Error(data.detail || 'Analysis could not be completed. Please try again.')
       setResult(data)
@@ -439,7 +456,7 @@ function BiomarkerGrid({ markers, groupByCategory }) {
 
 function ServicePill({ ready }) {
   return (
-    <span className={`service-status ${ready ? 'service-status-ready' : 'service-status-waiting'}`}>
+    <span className={`service-status ${ready ? 'service-status-ready' : 'service-status-waiting'}`} role="status" aria-live="polite">
       <span className="service-status-dot" />
       {ready ? 'OCR & AI Ready' : 'Connecting to services'}
     </span>
