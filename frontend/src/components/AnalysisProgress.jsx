@@ -1,10 +1,10 @@
 import { Check, FileSearch2, LoaderCircle, LockKeyhole, Sparkles, Wifi } from 'lucide-react'
 
 const STEPS = [
-  { label: 'Connecting to analysis server...', icon: Wifi },
-  { label: 'Extracting lab text & values (OCR)...', icon: FileSearch2 },
-  { label: 'Stripping personal identifiers (PII protection)...', icon: LockKeyhole },
-  { label: 'Generating plain-language explanation...', icon: Sparkles },
+  { label: 'Connecting to analysis engine...', icon: Wifi },
+  { label: 'Extracting lab values via Tesseract OCR...', icon: FileSearch2 },
+  { label: 'Redacting personal identifiers (Name, Phone, UHID)...', icon: LockKeyhole },
+  { label: 'Generating plain-language insights...', icon: Sparkles },
 ]
 
 export default function AnalysisProgress({ activeStep = 0 }) {
@@ -15,7 +15,7 @@ export default function AnalysisProgress({ activeStep = 0 }) {
         <div>
           <p className="section-kicker">Secure processing</p>
           <h2 className="mt-1 text-lg font-semibold text-slate-900">Preparing your explanation</h2>
-          <p className="mt-1 max-w-xl text-sm text-slate-600">If the analysis server is waking up, connecting can take around 30 seconds. Keep this page open while we work.</p>
+          <p className="mt-1 max-w-xl text-sm text-slate-600">The first run may take around 30 seconds while the analysis engine wakes up. Keep this page open while we work.</p>
         </div>
       </div>
 

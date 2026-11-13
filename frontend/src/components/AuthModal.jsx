@@ -43,9 +43,9 @@ export default function AuthModal({ open, supabase, onClose, onAuthenticated }) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
-      <section className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl sm:p-8" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+      <section className="auth-modal panel-card w-full max-w-md p-6 shadow-2xl sm:p-8" role="dialog" aria-modal="true" aria-labelledby="auth-title">
         <div className="flex items-start justify-between gap-4">
-          <span className="rounded-2xl bg-teal-50 p-3 text-teal-800"><KeyRound size={21} aria-hidden="true" /></span>
+          <span className="auth-modal-icon"><KeyRound size={21} aria-hidden="true" /></span>
           <button type="button" className="rounded-xl p-2 text-slate-500 hover:bg-slate-100" aria-label="Close sign-in dialog" onClick={onClose}>
             <X size={19} aria-hidden="true" />
           </button>

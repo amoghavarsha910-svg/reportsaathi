@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Activity, ChevronDown, HeartPulse, History, LockKeyhole, LogIn, LogOut, Sparkles } from 'lucide-react'
+import { Activity, ChevronDown, HeartPulse, History, LogIn, LogOut, Sparkles } from 'lucide-react'
 
 import AnalysisProgress from './components/AnalysisProgress.jsx'
 import AuthModal from './components/AuthModal.jsx'
@@ -218,65 +218,72 @@ export default function App() {
   const attentionBiomarkers = filteredBiomarkers.filter((marker) => ATTENTION_STATUSES.has(marker.status))
   const normalBiomarkers = filteredBiomarkers.filter((marker) => marker.status === 'normal')
   const unclearBiomarkers = filteredBiomarkers.filter((marker) => !ATTENTION_STATUSES.has(marker.status) && marker.status !== 'normal')
+  const servicesReady = backendReady && Boolean(health?.tesseract_ready && health?.poppler_ready)
 
   return (
     <div className="app-shell min-h-screen px-4 pb-8 pt-4 sm:px-6 sm:pt-6">
-      <div className="mx-auto max-w-5xl">
-        <DisclaimerBanner />
-
-        <header className="flex flex-col gap-5 py-7 sm:flex-row sm:items-center sm:justify-between sm:py-9">
-          <div className="flex items-center gap-3.5">
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-800 text-white shadow-lg shadow-teal-900/10">
+      <div className="app-container mx-auto max-w-6xl">
+        <header className="top-nav">
+          <div className="brand-lockup">
+            <span className="brand-mark">
               <HeartPulse size={26} strokeWidth={1.8} aria-hidden="true" />
             </span>
             <div>
-              <p className="text-xl font-bold tracking-tight text-slate-900">ReportSaathi</p>
-              <p className="text-sm text-slate-500">Understand your lab report, one result at a time.</p>
+              <p className="brand-name">ReportSaathi</p>
+              <p className="brand-tagline">Your lab report, in perspective</p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-teal-100 bg-white px-3 py-2 text-teal-900">
-              <LockKeyhole size={14} aria-hidden="true" /> {session ? 'Optional history enabled' : 'Guest mode - No account needed'}
-            </span>
-            <ServicePill label="Service" ready={backendReady} />
-            <ServicePill label="OCR" ready={Boolean(health?.tesseract_ready && health?.poppler_ready)} />
-            <button type="button" className="header-action" onClick={() => setHistoryOpen(true)}>
-              <History size={15} aria-hidden="true" /> My Saved Reports
+          <nav className="top-nav-actions" aria-label="Main navigation">
+            <ServicePill ready={servicesReady} />
+            <button type="button" className="nav-action" onClick={() => setHistoryOpen(true)}>
+              <History size={16} aria-hidden="true" /> <span>My Saved Reports</span>
             </button>
             {session?.user?.email ? (
               <>
-                <span className="max-w-40 truncate px-1 text-slate-600" title={session.user.email}>{session.user.email}</span>
-                <button type="button" className="header-action" onClick={() => supabase?.auth.signOut()}>
-                  <LogOut size={15} aria-hidden="true" /> Sign Out
+                <span className="nav-user-email" title={session.user.email}>{session.user.email}</span>
+                <button type="button" className="nav-action nav-action-quiet" onClick={() => supabase?.auth.signOut()}>
+                  <LogOut size={15} aria-hidden="true" /> <span>Sign Out</span>
                 </button>
               </>
             ) : (
-              <button type="button" className="header-action header-action-primary" onClick={() => setAuthModalOpen(true)}>
-                <LogIn size={15} aria-hidden="true" /> Sign In
+              <button type="button" className="nav-action nav-action-primary" onClick={() => setAuthModalOpen(true)}>
+                <LogIn size={15} aria-hidden="true" /> <span>Sign In</span>
               </button>
             )}
-          </div>
+          </nav>
         </header>
+
+        <div className="disclaimer-wrap"><DisclaimerBanner /></div>
 
         <main className="space-y-6">
           {!result && (
             <>
-              <section className="home-intro mb-2 max-w-3xl">
-                <p className="section-kicker">A clearer view of your results</p>
-                <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">Lab language, made a little simpler.</h1>
-                <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">Upload a report for a calm, educational explanation of the terms and values. Start as a guest; no account is needed.</p>
-              </section>
+              <div className="home-layout">
+                <section className="home-intro">
+                  <p className="hero-eyebrow"><span /> A clearer view of your results</p>
+                  <h1 className="hero-title">Your lab results,<br /><span>with context and clarity.</span></h1>
+                  <p className="hero-description">Understand the language in your report with calm, plain-language explanations. Educational support for a more informed conversation with your clinician.</p>
+                  <div className="hero-proof-row">
+                    <span><i /> Start as a guest</span>
+                    <span><i /> English, Hindi &amp; Kannada</span>
+                  </div>
+                  <div className="hero-note">
+                    <span className="hero-note-mark"><Activity size={17} aria-hidden="true" /></span>
+                    <p><strong>Built around your report.</strong> Reference ranges and values are shown as printed, with personal details automatically redacted before AI analysis.</p>
+                  </div>
+                </section>
 
-              <UploadDropzone
-                file={selectedFile}
-                language={language}
-                onFileChange={handleFileChange}
-                onLanguageChange={setLanguage}
-                onAnalyze={handleAnalyze}
-                onTrySample={handleTrySample}
-                busy={busy}
-                error={error}
-              />
+                <UploadDropzone
+                  file={selectedFile}
+                  language={language}
+                  onFileChange={handleFileChange}
+                  onLanguageChange={setLanguage}
+                  onAnalyze={handleAnalyze}
+                  onTrySample={handleTrySample}
+                  busy={busy}
+                  error={error}
+                />
+              </div>
               {busy && <AnalysisProgress activeStep={activeStep} />}
             </>
           )}
@@ -344,8 +351,8 @@ export default function App() {
                           <span className="flex min-w-0 items-center gap-3 text-left">
                             <span className="normal-results-icon"><Activity size={19} aria-hidden="true" /></span>
                             <span>
-                              <span className="block text-base font-semibold text-slate-900">Within Normal Range</span>
-                              <span className="mt-0.5 block text-sm text-slate-500">{normalBiomarkers.length} result{normalBiomarkers.length === 1 ? '' : 's'} shown within the provided reference range</span>
+                              <span className="block text-base font-semibold text-slate-900">Within Reference Range</span>
+                              <span className="mt-0.5 block text-sm text-slate-500">{normalBiomarkers.length} result{normalBiomarkers.length === 1 ? '' : 's'} shown within this lab’s stated range</span>
                             </span>
                           </span>
                           <ChevronDown size={19} className={`shrink-0 text-slate-500 transition-transform ${normalResultsOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
@@ -430,11 +437,11 @@ function BiomarkerGrid({ markers, groupByCategory }) {
   )
 }
 
-function ServicePill({ label, ready }) {
+function ServicePill({ ready }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-2 text-slate-600">
-      <span className={`h-1.5 w-1.5 rounded-full ${ready ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-      {label} {ready ? 'ready' : 'checking'}
+    <span className={`service-status ${ready ? 'service-status-ready' : 'service-status-waiting'}`}>
+      <span className="service-status-dot" />
+      {ready ? 'OCR & AI Ready' : 'Connecting to services'}
     </span>
   )
 }
