@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #172b35;
+  background: #f4f8f7;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* { box-sizing: border-box; }
+body { min-width: 320px; min-height: 100vh; margin: 0; background: #f4f8f7; }
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+
+.panel-card {
+  border: 1px solid #e2e9e7;
+  border-radius: 1.25rem;
+  background: #fff;
+  box-shadow: 0 8px 26px rgb(26 58 66 / 5%);
+}
+.section-kicker {
+  color: #138276;
+  font-size: .68rem;
+  font-weight: 750;
+  letter-spacing: .14em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+.button-primary, .button-secondary, .button-sample, .copy-button, .language-pill, .filter-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  border-radius: .8rem;
+  font-size: .875rem;
+  font-weight: 650;
+  transition: background-color .18s ease, border-color .18s ease, color .18s ease, transform .18s ease;
+}
+.button-primary { min-height: 2.85rem; border: 1px solid #087d72; background: #087d72; padding: .7rem 1.1rem; color: #fff; box-shadow: 0 5px 12px rgb(8 125 114 / 16%); }
+.button-primary:hover:not(:disabled) { transform: translateY(-1px); background: #06695f; }
+.button-primary:disabled { border-color: #a8c7c2; background: #a8c7c2; }
+.button-secondary { min-height: 2.65rem; border: 1px solid #d9e4e1; background: #fff; padding: .6rem .9rem; color: #26414a; }
+.button-secondary:hover { border-color: #8bb8b0; background: #f4fbf9; }
+.button-sample { min-height: 2.55rem; border: 1px solid #d6ebe6; background: #f1faf7; padding: .55rem .8rem; color: #08766c; }
+.button-sample:hover:not(:disabled) { background: #e3f4ee; }
+.button-sample:disabled { opacity: .55; }
+.copy-button { border: 0; background: transparent; padding: .3rem .4rem; color: #14776f; font-size: .75rem; }
+.copy-button:hover:not(:disabled) { background: #eff8f6; }
+.copy-button:disabled { opacity: .5; }
+.language-pill, .filter-pill { min-height: 2.35rem; border: 1px solid #dce7e4; background: #fff; padding: .45rem .8rem; color: #4e656b; font-size: .78rem; }
+.language-pill:hover, .filter-pill:hover { border-color: #8bb8b0; }
+.language-pill-active, .filter-pill-active { border-color: #087d72; background: #e8f6f2; color: #086e64; }
+.search-input { width: 100%; min-height: 2.75rem; border: 1px solid #dce6e3; border-radius: .8rem; background: #fff; padding: .6rem .8rem .6rem 2.55rem; color: #172b35; outline: none; }
+.search-input:focus, .select-input:focus { border-color: #36a398; box-shadow: 0 0 0 3px rgb(8 125 114 / 10%); }
+.select-input { min-height: 2.3rem; border: 1px solid #dce6e3; border-radius: .65rem; background: #fff; padding: .35rem 1.8rem .35rem .65rem; color: #334c53; outline: none; }
+.header-action { display: inline-flex; min-height: 2.25rem; align-items: center; justify-content: center; gap: .4rem; border: 1px solid #dce6e3; border-radius: 999px; background: #fff; padding: .45rem .7rem; color: #405a61; font-size: .75rem; font-weight: 650; transition: background-color .18s ease, border-color .18s ease; }
+.header-action:hover { border-color: #8bb8b0; background: #f4fbf9; }
+.header-action-primary { border-color: #087d72; background: #087d72; color: #fff; }
+.header-action-primary:hover { border-color: #06695f; background: #06695f; }
+.auth-input { display: block; width: 100%; min-height: 2.8rem; border: 1px solid #dce6e3; border-radius: .8rem; background: #fff; padding: .65rem .8rem; color: #172b35; outline: none; }
+.auth-input:focus { border-color: #36a398; box-shadow: 0 0 0 3px rgb(8 125 114 / 10%); }
+.history-drawer { animation: drawer-in .22s ease-out both; }
+.history-delete { display: inline-flex; min-height: 2.65rem; align-items: center; justify-content: center; gap: .4rem; border: 1px solid #f1d4d2; border-radius: .8rem; background: #fff; padding: .6rem .8rem; color: #a33434; font-size: .875rem; font-weight: 650; }
+.history-delete:hover:not(:disabled) { background: #fff4f3; }
+.history-delete:disabled { opacity: .55; }
+@keyframes drawer-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@media (prefers-reduced-motion: reduce) { .history-drawer { animation: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

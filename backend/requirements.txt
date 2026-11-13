@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic-settings
+pymupdf>=1.24,<2
+pytesseract
+pdf2image
+Pillow
+httpx>=0.26,<1
+google-genai>=1.0.0
+supabase>=2.10.0
