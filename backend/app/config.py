@@ -4,7 +4,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    allowed_origins: str = "http://localhost:5173"
+    allowed_origins: str = ""
+    cors_origins: str = ""
     max_upload_mb: int = 10
     tesseract_cmd: str | None = None
     poppler_path: str | None = None
@@ -23,7 +24,13 @@ class Settings(BaseSettings):
 
     @property
     def allowed_origins_list(self) -> list[str]:
-        return [origin.strip() for origin in self.allowed_origins.split(",") if origin.strip()]
+        configured_origins = f"{self.allowed_origins},{self.cors_origins}"
+        origins = [
+            "http://localhost:5173",
+            "https://reportanalyser.netlify.app",
+            *(origin.strip() for origin in configured_origins.split(",") if origin.strip()),
+        ]
+        return list(dict.fromkeys(origins))
 
     @property
     def TESSERACT_CMD(self) -> str | None:
