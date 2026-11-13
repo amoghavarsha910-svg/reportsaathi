@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Activity, HeartPulse, History, LockKeyhole, LogIn, LogOut, Sparkles } from 'lucide-react'
+import { Activity, ChevronDown, HeartPulse, History, LockKeyhole, LogIn, LogOut, Sparkles } from 'lucide-react'
 
 import AnalysisProgress from './components/AnalysisProgress.jsx'
 import AuthModal from './components/AuthModal.jsx'
@@ -15,6 +15,7 @@ import { supabase } from './lib/supabase.js'
 import { isAuthRequiredError } from './lib/session.js'
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+const ATTENTION_STATUSES = new Set(['high', 'low', 'borderline'])
 
 export default function App() {
   const [health, setHealth] = useState(null)
@@ -35,6 +36,7 @@ export default function App() {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('all')
   const [groupByCategory, setGroupByCategory] = useState(true)
+  const [normalResultsOpen, setNormalResultsOpen] = useState(true)
 
   useEffect(() => {
     let active = true
@@ -86,8 +88,8 @@ export default function App() {
       return undefined
     }
     const timer = window.setInterval(() => {
-      setActiveStep((step) => Math.min(step + 1, 2))
-    }, 2200)
+      setActiveStep((step) => Math.min(step + 1, 3))
+    }, 5000)
     return () => window.clearInterval(timer)
   }, [busy])
 
@@ -207,25 +209,18 @@ export default function App() {
     return biomarkers.filter((marker) => {
       const matchesFilter = filter === 'all'
         || (filter === 'normal' && marker.status === 'normal')
-        || (filter === 'attention' && marker.status !== 'normal')
+        || (filter === 'attention' && ATTENTION_STATUSES.has(marker.status))
       const searchable = `${marker.test_name} ${marker.category} ${marker.status}`.toLocaleLowerCase()
       return matchesFilter && (!searchText || searchable.includes(searchText))
     })
   }, [biomarkers, filter, query])
 
-  const groups = useMemo(() => {
-    if (!groupByCategory) return [['All tests', filteredBiomarkers]]
-    const grouped = new Map()
-    for (const biomarker of filteredBiomarkers) {
-      const category = biomarker.category || 'Other tests'
-      if (!grouped.has(category)) grouped.set(category, [])
-      grouped.get(category).push(biomarker)
-    }
-    return [...grouped.entries()]
-  }, [filteredBiomarkers, groupByCategory])
+  const attentionBiomarkers = filteredBiomarkers.filter((marker) => ATTENTION_STATUSES.has(marker.status))
+  const normalBiomarkers = filteredBiomarkers.filter((marker) => marker.status === 'normal')
+  const unclearBiomarkers = filteredBiomarkers.filter((marker) => !ATTENTION_STATUSES.has(marker.status) && marker.status !== 'normal')
 
   return (
-    <div className="min-h-screen px-4 pb-8 pt-4 sm:px-6 sm:pt-6">
+    <div className="app-shell min-h-screen px-4 pb-8 pt-4 sm:px-6 sm:pt-6">
       <div className="mx-auto max-w-5xl">
         <DisclaimerBanner />
 
@@ -266,10 +261,10 @@ export default function App() {
         <main className="space-y-6">
           {!result && (
             <>
-              <section className="mb-2 max-w-3xl">
+              <section className="home-intro mb-2 max-w-3xl">
                 <p className="section-kicker">A clearer view of your results</p>
                 <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">Lab language, made a little simpler.</h1>
-                <p className="mt-3 text-base leading-7 text-slate-600">Upload a report for an educational explanation of the terms and values. Your report is processed as a guest; you do not need to sign in.</p>
+                <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">Upload a report for a calm, educational explanation of the terms and values. Start as a guest; no account is needed.</p>
               </section>
 
               <UploadDropzone
@@ -319,15 +314,49 @@ export default function App() {
                     No tests match those filters. Try another search or choose All.
                   </div>
                 ) : (
-                  <div className="space-y-6">
-                    {groups.map(([category, markers]) => (
-                      <section key={category} aria-label={category}>
-                        {groupByCategory && <h3 className="mb-3 pl-1 text-sm font-semibold text-slate-600">{category}</h3>}
-                        <div className="grid gap-4 lg:grid-cols-2">
-                          {markers.map((marker, index) => <BiomarkerCard key={`${marker.test_name}-${index}`} biomarker={marker} />)}
-                        </div>
+                  <div className="space-y-5">
+                    {attentionBiomarkers.length > 0 && (
+                      <BiomarkerSection
+                        title="Needs Attention"
+                        description="High, low, or borderline values to discuss in context."
+                        markers={attentionBiomarkers}
+                        groupByCategory={groupByCategory}
+                        tone="attention"
+                      />
+                    )}
+                    {unclearBiomarkers.length > 0 && (
+                      <BiomarkerSection
+                        title="Needs a Closer Look"
+                        description="Some report details could not be confidently matched."
+                        markers={unclearBiomarkers}
+                        groupByCategory={groupByCategory}
+                        tone="unclear"
+                      />
+                    )}
+                    {normalBiomarkers.length > 0 && (
+                      <section className="panel-card normal-results-panel overflow-hidden">
+                        <button
+                          type="button"
+                          className="normal-results-toggle"
+                          aria-expanded={normalResultsOpen}
+                          onClick={() => setNormalResultsOpen((open) => !open)}
+                        >
+                          <span className="flex min-w-0 items-center gap-3 text-left">
+                            <span className="normal-results-icon"><Activity size={19} aria-hidden="true" /></span>
+                            <span>
+                              <span className="block text-base font-semibold text-slate-900">Within Normal Range</span>
+                              <span className="mt-0.5 block text-sm text-slate-500">{normalBiomarkers.length} result{normalBiomarkers.length === 1 ? '' : 's'} shown within the provided reference range</span>
+                            </span>
+                          </span>
+                          <ChevronDown size={19} className={`shrink-0 text-slate-500 transition-transform ${normalResultsOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                        </button>
+                        {normalResultsOpen && (
+                          <div className="normal-results-content">
+                            <BiomarkerGrid markers={normalBiomarkers} groupByCategory={groupByCategory} />
+                          </div>
+                        )}
                       </section>
-                    ))}
+                    )}
                   </div>
                 )}
               </section>
@@ -358,6 +387,45 @@ export default function App() {
         listSavedReports={listSavedReports}
         deleteSavedReport={deleteSavedReport}
       />
+    </div>
+  )
+}
+
+function BiomarkerSection({ title, description, markers, groupByCategory, tone }) {
+  return (
+    <section className={`triage-section triage-section-${tone}`} aria-label={title}>
+      <div className="triage-heading">
+        <div>
+          <p className="section-kicker">Results overview</p>
+          <h3 className="mt-1 text-lg font-semibold text-slate-900">{title}</h3>
+          <p className="mt-1 text-sm text-slate-600">{description}</p>
+        </div>
+        <span className="triage-count">{markers.length}</span>
+      </div>
+      <BiomarkerGrid markers={markers} groupByCategory={groupByCategory} />
+    </section>
+  )
+}
+
+function BiomarkerGrid({ markers, groupByCategory }) {
+  const groups = groupByCategory
+    ? Object.entries(markers.reduce((grouped, marker) => {
+      const category = marker.category || 'Other tests'
+      grouped[category] = [...(grouped[category] || []), marker]
+      return grouped
+    }, {}))
+    : [['All tests', markers]]
+
+  return (
+    <div className="space-y-5">
+      {groups.map(([category, categoryMarkers]) => (
+        <section key={category} aria-label={category}>
+          {groupByCategory && <h4 className="biomarker-category-heading">{category}</h4>}
+          <div className="grid gap-4 lg:grid-cols-2">
+            {categoryMarkers.map((marker, index) => <BiomarkerCard key={`${marker.test_name}-${index}`} biomarker={marker} />)}
+          </div>
+        </section>
+      ))}
     </div>
   )
 }

@@ -124,7 +124,7 @@ export default function UploadDropzone({
         </p>
         <button type="button" className="button-sample" onClick={onTrySample} disabled={busy}>
           <FlaskConical size={17} aria-hidden="true" />
-          Try Sample Report
+          Try with a Sample Report
         </button>
       </div>
     </section>

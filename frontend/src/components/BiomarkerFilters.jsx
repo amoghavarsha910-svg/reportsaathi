@@ -2,8 +2,8 @@ import { Search, SlidersHorizontal } from 'lucide-react'
 
 const FILTERS = [
   { value: 'all', label: 'All' },
-  { value: 'attention', label: 'Attention Needed' },
-  { value: 'normal', label: 'Normal' },
+  { value: 'attention', label: 'Needs Attention' },
+  { value: 'normal', label: 'Within Normal Range' },
 ]
 
 export default function BiomarkerFilters({

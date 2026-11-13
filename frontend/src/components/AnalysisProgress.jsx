@@ -1,29 +1,35 @@
-import { Check, LoaderCircle, ScanText, ShieldCheck, Languages } from 'lucide-react'
+import { Check, FileSearch2, LoaderCircle, LockKeyhole, Sparkles, Wifi } from 'lucide-react'
 
 const STEPS = [
-  { label: '1. Extracting text...', icon: ScanText },
-  { label: '2. Redacting personal details...', icon: ShieldCheck },
-  { label: '3. Translating lab terms...', icon: Languages },
+  { label: 'Connecting to analysis server...', icon: Wifi },
+  { label: 'Extracting lab text & values (OCR)...', icon: FileSearch2 },
+  { label: 'Stripping personal identifiers (PII protection)...', icon: LockKeyhole },
+  { label: 'Generating plain-language explanation...', icon: Sparkles },
 ]
 
 export default function AnalysisProgress({ activeStep = 0 }) {
   return (
-    <section className="panel-card p-5" aria-live="polite" aria-busy="true">
-      <div className="flex items-center gap-3">
-        <span className="rounded-xl bg-teal-50 p-2.5 text-teal-800"><LoaderCircle className="animate-spin" size={20} aria-hidden="true" /></span>
+    <section className="analysis-progress panel-card p-5 sm:p-7" aria-live="polite" aria-busy="true" aria-label="Report analysis progress">
+      <div className="flex items-start gap-4">
+        <span className="analysis-progress-icon"><LoaderCircle className="animate-spin" size={22} aria-hidden="true" /></span>
         <div>
-          <h2 className="font-semibold text-slate-900">Preparing your explanation</h2>
-          <p className="text-sm text-slate-500">This usually takes a few moments.</p>
+          <p className="section-kicker">Secure processing</p>
+          <h2 className="mt-1 text-lg font-semibold text-slate-900">Preparing your explanation</h2>
+          <p className="mt-1 max-w-xl text-sm text-slate-600">If the analysis server is waking up, connecting can take around 30 seconds. Keep this page open while we work.</p>
         </div>
       </div>
-      <ol className="mt-5 grid gap-3 sm:grid-cols-3">
+
+      <ol className="analysis-stepper mt-6">
         {STEPS.map(({ label, icon: Icon }, index) => {
           const complete = index < activeStep
           const current = index === activeStep
           return (
-            <li key={label} className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-medium ${current ? 'bg-teal-50 text-teal-900' : complete ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-50 text-slate-400'}`}>
-              {complete ? <Check size={16} aria-hidden="true" /> : <Icon size={16} aria-hidden="true" />}
-              {label}
+            <li key={label} className={`analysis-step ${current ? 'analysis-step-current' : ''} ${complete ? 'analysis-step-complete' : ''}`}>
+              <span className="analysis-step-mark">
+                {complete ? <Check size={17} aria-hidden="true" /> : <Icon size={17} aria-hidden="true" />}
+              </span>
+              <span className="analysis-step-label">{label}</span>
+              {current && <span className="analysis-step-pulse" aria-hidden="true" />}
             </li>
           )
         })}

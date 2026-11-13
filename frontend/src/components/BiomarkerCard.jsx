@@ -1,104 +1,135 @@
-import { CheckCheck, ChevronDown, Copy, HelpCircle } from 'lucide-react'
-import { useState } from 'react'
+import { ChevronDown, CircleHelp, Ruler } from 'lucide-react'
 
 const STATUS_STYLE = {
-  normal: { label: 'Normal', badge: 'bg-emerald-100 text-emerald-800', card: 'border-emerald-100', marker: 'left-1/2 bg-emerald-600' },
-  borderline: { label: 'Borderline', badge: 'bg-amber-100 text-amber-900', card: 'border-amber-200', marker: 'left-[72%] bg-amber-600' },
-  high: { label: 'High', badge: 'bg-rose-100 text-rose-800', card: 'border-rose-200', marker: 'left-[91%] bg-rose-600' },
-  low: { label: 'Low', badge: 'bg-rose-100 text-rose-800', card: 'border-rose-200', marker: 'left-[9%] bg-rose-600' },
-  unclear: { label: 'Unclear', badge: 'bg-slate-200 text-slate-700', card: 'border-slate-200', marker: 'left-1/2 bg-slate-500' },
+  normal: { label: 'Within range', badge: 'badge-normal', card: 'marker-card-normal', pin: 'pin-normal', fallback: 'fallback-normal' },
+  borderline: { label: 'Borderline', badge: 'badge-borderline', card: 'marker-card-borderline', pin: 'pin-borderline', fallback: 'fallback-borderline' },
+  high: { label: 'High', badge: 'badge-high', card: 'marker-card-attention', pin: 'pin-attention', fallback: 'fallback-high' },
+  low: { label: 'Low', badge: 'badge-high', card: 'marker-card-attention', pin: 'pin-attention', fallback: 'fallback-low' },
+  unclear: { label: 'Unclear', badge: 'badge-unclear', card: 'marker-card-unclear', pin: 'pin-unclear', fallback: 'fallback-unclear' },
+}
+
+const NUMBER = '[-+]?(?:\\d{1,3}(?:,\\d{3})+|\\d+)(?:\\.\\d+)?'
+const RANGE_PATTERN = new RegExp(`^\\s*(${NUMBER})\\s*(?:-|–|—|to)\\s*(${NUMBER})(?:\\s|$|[a-z])`, 'i')
+const VALUE_PATTERN = new RegExp(`^\\s*(${NUMBER})\\s*$`)
+
+function parseNumericRange(referenceRange) {
+  if (typeof referenceRange !== 'string') return null
+  const match = referenceRange.match(RANGE_PATTERN)
+  if (!match) return null
+
+  const min = Number(match[1].replaceAll(',', ''))
+  const max = Number(match[2].replaceAll(',', ''))
+  return Number.isFinite(min) && Number.isFinite(max) && max > min ? { min, max } : null
+}
+
+function parseNumericValue(observedValue) {
+  const match = String(observedValue ?? '').match(VALUE_PATTERN)
+  if (!match) return null
+  const value = Number(match[1].replaceAll(',', ''))
+  return Number.isFinite(value) ? value : null
+}
+
+function NumericRangeBar({ biomarker, visual, numericRange, value }) {
+  const span = numericRange.max - numericRange.min
+  const scaleMin = numericRange.min - span * 0.5
+  const scaleMax = numericRange.max + span * 0.5
+  const markerPosition = value === null ? null : Math.max(0, Math.min(100, ((value - scaleMin) / (scaleMax - scaleMin)) * 100))
+
+  return (
+    <div className="range-block">
+      <div className="range-heading">
+        <span><Ruler size={14} aria-hidden="true" /> Numeric reference range</span>
+        <span>{biomarker.unit || 'Value scale'}</span>
+      </div>
+      <div
+        className="numeric-range-track"
+        role="img"
+        aria-label={`Low zone, normal zone from ${numericRange.min} to ${numericRange.max}, high zone${value === null ? '' : `, observed value ${biomarker.observed_value} ${biomarker.unit || ''}`}`}
+      >
+        <span className="range-zone range-zone-low" />
+        <span className="range-zone range-zone-normal" />
+        <span className="range-zone range-zone-high" />
+        {markerPosition !== null && <span className={`range-marker ${visual.pin}`} style={{ left: `${markerPosition}%` }} />}
+      </div>
+      <div className="range-scale-labels">
+        <span>Low</span>
+        <span>{numericRange.min}–{numericRange.max} {biomarker.unit}</span>
+        <span>High</span>
+      </div>
+      <p className="range-caption">
+        {value === null
+          ? 'The observed value could not be placed on this numeric scale.'
+          : `Observed: ${biomarker.observed_value}${biomarker.unit ? ` ${biomarker.unit}` : ''}`}
+      </p>
+    </div>
+  )
+}
+
+function QualitativeRangeCue({ visual, status }) {
+  return (
+    <div className="range-block">
+      <div className="range-heading"><span><Ruler size={14} aria-hidden="true" /> Status reference cue</span><span>Not to scale</span></div>
+      <div className="qualitative-range-track" role="img" aria-label={`Qualitative status cue: ${visual.label}; not to scale`}>
+        <span className="range-zone range-zone-low" />
+        <span className="range-zone range-zone-normal" />
+        <span className="range-zone range-zone-high" />
+        <span className={`range-marker ${visual.fallback} ${status === 'low' ? 'fallback-marker-low' : status === 'high' ? 'fallback-marker-high' : ''}`} />
+      </div>
+      <div className="range-scale-labels"><span>Below</span><span>Reference area</span><span>Above</span></div>
+      <p className="range-caption">No numeric min–max reference bounds were available to scale this result.</p>
+    </div>
+  )
 }
 
 export default function BiomarkerCard({ biomarker }) {
-  const [checked, setChecked] = useState({})
-  const [copied, setCopied] = useState(false)
   const visual = STATUS_STYLE[biomarker.status] || STATUS_STYLE.unclear
-  const questions = biomarker.doctor_questions || []
-
-  async function copyQuestions() {
-    if (!questions.length) return
-    try {
-      await navigator.clipboard.writeText(questions.map((question) => `- ${question}`).join('\n'))
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 1800)
-    } catch {
-      setCopied(false)
-    }
-  }
+  const numericRange = parseNumericRange(biomarker.reference_range)
+  const numericValue = parseNumericValue(biomarker.observed_value)
 
   return (
-    <article className={`panel-card border ${visual.card} p-5`}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{biomarker.category}</p>
-          <h3 className="mt-1 text-lg font-semibold text-slate-900">{biomarker.test_name}</h3>
+    <article className={`biomarker-card panel-card ${visual.card}`}>
+      <div className="biomarker-card-heading">
+        <div className="min-w-0">
+          <p className="biomarker-category">{biomarker.category || 'Other tests'}</p>
+          <h4 className="mt-1 text-lg font-semibold text-slate-900">{biomarker.test_name}</h4>
         </div>
-        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${visual.badge}`}>{visual.label}</span>
+        <span className={`status-badge ${visual.badge}`}>{visual.label}</span>
       </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-xl bg-slate-50 px-4 py-3">
-          <p className="text-xs font-medium text-slate-500">Observed value</p>
-          <p className="mt-1 text-xl font-semibold tracking-tight text-slate-900">
-            {biomarker.observed_value}{biomarker.unit ? <span className="ml-1 text-sm font-medium text-slate-600">{biomarker.unit}</span> : null}
+      <div className="biomarker-values">
+        <div className="observed-value-card">
+          <p className="value-label">Observed value</p>
+          <p className="observed-value">
+            {biomarker.observed_value}
+            {biomarker.unit ? <span>{biomarker.unit}</span> : null}
           </p>
         </div>
-        <div className="rounded-xl bg-slate-50 px-4 py-3">
-          <p className="text-xs font-medium text-slate-500">Reference range</p>
-          <p className="mt-1 text-base font-semibold text-slate-800">{biomarker.reference_range || 'Not shown'}</p>
+        <div className="reference-value-card">
+          <p className="value-label">Lab reference range</p>
+          <p className="reference-value">{biomarker.reference_range || 'Not shown on report'}</p>
         </div>
       </div>
 
-      <div className="mt-4" aria-label={`Qualitative range cue: ${visual.label}; not to scale`}>
-        <div className="relative h-2 rounded-full bg-slate-100">
-          <span className="absolute left-1/4 top-0 h-2 w-1/2 rounded-full bg-emerald-100" />
-          <span className={`absolute top-1/2 z-10 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow ${visual.marker}`} />
-        </div>
-        <div className="mt-1.5 flex justify-between text-[10px] font-medium uppercase tracking-wider text-slate-400">
-          <span>Below</span><span>Reference area</span><span>Above</span>
-        </div>
-        <p className="mt-1 text-[10px] text-slate-400">Visual status cue only; not a numeric scale.</p>
+      {numericRange
+        ? <NumericRangeBar biomarker={biomarker} visual={visual} numericRange={numericRange} value={numericValue} />
+        : <QualitativeRangeCue visual={visual} status={biomarker.status} />}
+
+      <div className="meaning-block">
+        <p className="meaning-label">In plain language</p>
+        <p className="meaning-copy">{biomarker.simple_explanation}</p>
       </div>
 
-      <p className="mt-5 text-sm leading-6 text-slate-700">{biomarker.simple_explanation}</p>
-
-      <details className="group mt-4 border-t border-slate-100 pt-3">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-slate-800 marker:hidden">
-          Common factors that influence this
-          <ChevronDown size={17} className="shrink-0 text-slate-500 transition group-open:rotate-180" aria-hidden="true" />
-        </summary>
-        <ul className="mt-3 list-disc space-y-1 pl-5 text-sm leading-6 text-slate-600">
-          {(biomarker.what_can_affect_it || []).map((factor) => <li key={factor}>{factor}</li>)}
-        </ul>
-      </details>
-
-      <div className="mt-4 border-t border-slate-100 pt-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h4 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-            <HelpCircle size={16} className="text-teal-700" aria-hidden="true" />
-            Questions to ask your doctor
-          </h4>
-          <button type="button" className="copy-button" onClick={copyQuestions} disabled={!questions.length}>
-            {copied ? <CheckCheck size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
-            {copied ? 'Copied' : 'Copy questions'}
-          </button>
-        </div>
-        <ul className="mt-3 space-y-2">
-          {questions.map((question, index) => (
-            <li key={question}>
-              <label className="flex cursor-pointer items-start gap-2.5 text-sm leading-5 text-slate-600">
-                <input
-                  type="checkbox"
-                  className="mt-1 accent-teal-700"
-                  checked={Boolean(checked[index])}
-                  onChange={(event) => setChecked((previous) => ({ ...previous, [index]: event.target.checked }))}
-                />
-                <span>{question}</span>
-              </label>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {(biomarker.what_can_affect_it || []).length > 0 && (
+        <details className="factors-details group">
+          <summary>
+            <span><CircleHelp size={16} aria-hidden="true" /> Common factors that can influence this</span>
+            <ChevronDown size={17} className="shrink-0 transition group-open:rotate-180" aria-hidden="true" />
+          </summary>
+          <ul>
+            {biomarker.what_can_affect_it.map((factor) => <li key={factor}>{factor}</li>)}
+          </ul>
+        </details>
+      )}
     </article>
   )
 }
